@@ -22,6 +22,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.fileupload.FileItem;
 import org.kohsuke.stapler.Ancestor;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -423,6 +424,14 @@ public class MockStaplerRequest implements StaplerRequest {
     }
 
     public boolean checkIfModified(long timestampOfResource, StaplerResponse rsp, long expiration) {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getOriginalRestOfPath() {
+        throw new UnsupportedOperationException();
+    }
+
+    public Stapler getStapler() {
         throw new UnsupportedOperationException();
     }
 }
