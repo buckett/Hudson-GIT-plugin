@@ -27,7 +27,8 @@ import hudson.remoting.VirtualChannel;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
+import hudson.util.FormValidation.FileValidator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,6 +44,7 @@ import java.util.List;
 import javax.servlet.ServletException;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.spearce.jgit.lib.ObjectId;
@@ -835,32 +837,29 @@ public class GitSCM extends SCM implements Serializable {
 			save();
 			return true;
 		}
+		
+		public void doGitExeCheck(StaplerRequest req, StaplerResponse resp, @QueryParameter(value="value", required=true) String value) throws IOException, ServletException {
+		    FormValidation.validateExecutable(value, new FileValidator() {
+			@Override
+			public FormValidation validate(File f) {
+			    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    try {
+				Proc proc = Hudson.getInstance().createLauncher(
+					TaskListener.NULL).launch().cmds(f, "--version").stdout(baos).start();
+				proc.join();
+				String result = baos.toString();
 
-		public void doGitExeCheck(StaplerRequest req, StaplerResponse rsp)
-				throws IOException, ServletException {
-			new FormFieldValidator.Executable(req, rsp) {
-				protected void checkExecutable(File exe) throws IOException,
-						ServletException {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					try {
-						Proc proc = Hudson.getInstance().createLauncher(
-								TaskListener.NULL).launch(
-								new String[] { getGitExe(), "--version" },
-								new String[0], baos, null);
-						proc.join();
+				return FormValidation.ok("Found: "+result);
 
-						// String result = baos.toString();
-
-						ok();
-
-					} catch (InterruptedException e) {
-						error("Unable to check git version");
-					} catch (RuntimeException e) {
-						error("Unable to check git version");
-					}
-
-				}
-			}.process();
+			    } catch (InterruptedException e) {
+				return FormValidation.error("Unable to check git version");
+			    } catch (RuntimeException e) {
+				return FormValidation.error("Unable to check git version");
+			    } catch (IOException e) {
+				return FormValidation.error("Unable to check git version");
+			    }
+			}
+		    }).generateResponse(req, resp, null);
 		}
 	}
 
